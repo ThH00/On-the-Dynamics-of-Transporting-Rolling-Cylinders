@@ -1,30 +1,61 @@
 ## Importing packages
 import numpy as np
 import winsound
+# import argparse
+
+# # optaining certain parametric arguments from an input file
+# def parse_args():
+#     parser = argparse.ArgumentParser(description='Process some integers and floats.')
+#     parser.add_argument('weight', type=float, help='cylinder weight in lb (float)')
+#     parser.add_argument('radius', type=float, help='cylinder radius in ft (float)')
+#     parser.add_argument('height', type=float, help='cylinder height in ft (float)')
+#     parser.add_argument('theta', type=float, help='angle that cylinders make with vertical in rad (float)')
+#     parser.add_argument('I_xbar0_1', type=float, help='x-coordinate of initial location of CG of cylinder I (float)')
+#     parser.add_argument('I_xbar0_2', type=float, help='y-coordinate of initial location of CG of cylinder I (float)')
+#     parser.add_argument('I_xbar0_3', type=float, help='z-coordinate of initial location of CG of cylinder I (float)')
+#     parser.add_argument('II_xbar0_1', type=float, help='x-coordinate of initial location of CG of cylinder II (float)')
+#     parser.add_argument('II_xbar0_2', type=float, help='y-coordinate of initial location of CG of cylinder II (float)')
+#     parser.add_argument('II_xbar0_3', type=float, help='z-coordinate of initial location of CG of cylinder II (float)')
+#     parser.add_argument('--output_path', '-o', type=str, help='Output path (optional)')
+    
+#     args = parser.parse_args()
+    
+#     return args.weight, args.radius, args.height, args.theta, args.I_xbar0_1, args.I_xbar0_2, args.I_xbar0_3, args.II_xbar0_1, args.II_xbar0_2, args.II_xbar0_3, args.output_path
+
+# weight, radius,height, theta, I_xbar0_1, I_xbar0_2, I_xbar0_3, II_xbar0_1, II_xbar0_2, II_xbar0_3, output_path = parse_args()
+
+weight = 113
+radius = 0.375
+height = 4.25
+theta = 0.3142
+I_xbar0_1 = 0
+I_xbar0_2 = -0.3
+I_xbar0_3 = 2.1369
+II_xbar0_1 = 0.75
+II_xbar0_2 = 0.1125
+II_xbar0_3 = 2.1369
 
 ## Problem Constants
 # number of degrees of freedom
 ndof = 12
 
 # cylinder dimensions (considering two identical cylinders)
-mass = 15        # kg, cylinder mass
-radius = 0.1    # m, cylinder radius
-height = 1.27      # m, cylinder height
-gravity = 10    # m/sec^2, gravitational acceleration
+gravity = 32.2          # m/sec^2, gravitational acceleration
+mass = weight/gravity   # slugs, cylinder mass
 
 # restitution coefficients
-e_N = 0 # 0.8       # dimensionless, normal impact restitution coefficient
-e_F = 0         # dimensionaless, tangential impact restitution coefficient
+e_N = 0                 # dimensionless, normal impact restitution coefficient
+e_F = 0                 # dimensionaless, tangential impact restitution coefficient
 
 # friction coefficients
 # source: https://www.engineeringtoolbox.com/friction-coefficients-d_778.html
-mu_s = np.inf # 0.8  # static friction coefficient
-mu_k = 0.4  # kinetic friction coefficient
+mu_s = np.inf           # static friction coefficient
+mu_k = 0.4              # kinetic friction coefficient
 
 ## Nondimensionalization
 # Nondimensionalization Parameters
 mass_nd_param = mass
-length_nd_param = 0.25 # radius
+length_nd_param = 1 # radius
 time_nd_param = np.sqrt(length_nd_param/gravity)
 velocity_nd_param = np.sqrt(gravity*length_nd_param)
 acceleration_nd_param = gravity
@@ -34,7 +65,7 @@ force_nd_param = mass_nd_param*acceleration_nd_param
 m = mass/mass_nd_param
 R = radius/length_nd_param
 h = height/length_nd_param
-gr = 1          # dimensionless, gravity
+gr = 1                  # dimensionless, gravity
 
 # Rotational Inertia Terms
 lambdat = 1/4*m*R**2+1/12*m*h**2    # [mass].[length]**2, tranverse moment of inertia
@@ -43,8 +74,8 @@ I = np.array([[lambdat,0,0],[0,lambdat,0],[0,0,lambdaa]])   # moment of intertia
 
 ## Simulation Parameters
 ti = 0                      # [time], initial time
-ntime = 10                # number of iterations
-dtime = 2e-3/time_nd_param  # [time], time step duration
+ntime = 10                  # number of iterations
+dtime = 1e-3/time_nd_param  # [time], time step duration
 
 ## Parameters of generalized alpha scheme
 # Differentiation parameters
@@ -58,10 +89,8 @@ beta = 0.25*(0.5+gama)**2
 r = 0.3
 
 # Loop parameters
-maxiter_n = 40
+maxiter_n = 100
 tol_n = 1.0e-5
-maxiter_fp = 20
-tol_fp = 1.0e-5
 
 ## Kinetic Quantities
 n_g = 4         # num position level constraints, constant
@@ -91,27 +120,24 @@ gdot_N = np.zeros((ntime,n_gN))
 q = np.zeros((ntime,ndof))
 u = np.zeros((ntime,ndof))
 
-# MAKE CHANGES HERE
-###################
-
 # obtained from frobenius_criteria_two_cylinders
 # > valid_touching_config
 psiI0 = 0
-thetaI0 = np.pi/10
+thetaI0 = theta
 phiI0 = 0
 psiII0 = np.pi
-thetaII0 = np.pi/10
+thetaII0 = theta
 phiII0 = 0
 
 psiIdot0 = 0
 thetaIdot0 = 0
-phiIdot0 = -1*time_nd_param
+phiIdot0 = -6*np.pi*time_nd_param
 psiIIdot0 = 0
 thetaIIdot0 = 0
 phiIIdot0 = 0 #-phidot0*time_nd_param
 
-I_xbar0 = np.array([-1.23836455533659e-17,-0.101120139798576,0.634822587284917])/length_nd_param
-II_xbar0 = np.array([0.200000000000000,-0.198879860201424,0.634822587284917])/length_nd_param
+I_xbar0 = np.array([I_xbar0_1, I_xbar0_2, I_xbar0_3])/length_nd_param
+II_xbar0 = np.array([II_xbar0_1, II_xbar0_2, II_xbar0_3])/length_nd_param
 
 I_vbar0 = np.array([0,0,0])
 II_vbar0 = np.array([0,0,0])
@@ -120,9 +146,9 @@ q0 = np.concatenate((I_xbar0,psiI0,thetaI0,phiI0,
                      II_xbar0,psiII0,thetaII0,phiII0),axis=None)
 u0 = np.concatenate((I_vbar0,0,0,0,II_vbar0,0,0,0),axis=None)
 
-lambda_N[:,0] = [m*gr, 1*m*gr, 0*m*gr]
+lambda_N[:,0] = [0.7*m*gr, 0.7*m*gr, 0*m*gr]
 lambda_F[:,0] = [0,0,0,0.16,0,0]
-lambda_g[:,0] = [1.0112014]
+lambda_g[:,0] = [0, 0.3*m*gr,0.3*m*gr,0]
 
 x0 = np.concatenate((a[:,0],U[:,0],Q[:,0],
                      Kappa_g[:,0],Lambda_g[:,0],lambda_g[:,0],
@@ -458,7 +484,9 @@ def get_cylinder_cylinder_contact(q,u,a):
         gamma_F2,gammadot_F2,W_F2,params
 
 def get_R(x, prev_x, prev_AV, prev_gamma_F, prev_gdot_N, prev_q, prev_u, t,
-           J_calc_bool,regions_are_fixed,A,B,C,D_st,E_st):
+           J_calc_bool):
+
+    global A, B, C, D_st, E_st
 
     # Data extraction
     prev_a, _, _, _, _, _, _, _, _, _, prev_lambda_N, _, prev_lambda_F = \
@@ -539,7 +567,7 @@ def get_R(x, prev_x, prev_AV, prev_gamma_F, prev_gdot_N, prev_q, prev_u, t,
     W_g[0,3] = 1
 
     # coordinate I_x3
-    c1 = 0.634822587284917/length_nd_param+h/2*np.cos(-np.pi/10)
+    c1 = I_xbar0[2]/length_nd_param+h/2*np.cos(theta)
     g[1] = q[2]+h/2*np.cos(q[4])-c1
     gdot[1] = u[2]-h/2*u[4]*np.sin(q[4])
     gddot[1] = a[2]-h/2*(a[4]*np.sin(q[4])+u[4]**2*np.cos(q[4]))
@@ -549,7 +577,7 @@ def get_R(x, prev_x, prev_AV, prev_gamma_F, prev_gdot_N, prev_q, prev_u, t,
     # Constraints on cylinder II
 
     # coordinate II_x3
-    c2 = 0.634822587284917/length_nd_param+h/2*np.cos(-np.pi/10)
+    c2 = II_xbar0[2]/length_nd_param+h/2*np.cos(theta)
     g[2] = q[8]+h/2*np.cos(q[10])-c2
     gdot[2] = u[8]-h/2*u[10]*np.sin(q[10])
     gddot[2] = a[8]-h/2*(a[10]*np.sin(q[10])+u[10]**2*np.cos(q[10]))
@@ -587,9 +615,6 @@ def get_R(x, prev_x, prev_AV, prev_gamma_F, prev_gdot_N, prev_q, prev_u, t,
     Rs = np.concatenate((temp1,temp2,temp3,g,gdot,gddot,gamma,gammadot),axis=None)
 
     # Contact residual Rc
-    # A = np.zeros(n_gN) # position contact
-    # B = np.zeros(n_gN) # velocity contact
-    # C = np.zeros(n_gN) # acceleration contact
     R_Kappa_N = np.zeros(n_gN) # (129)
     R_Lambda_N = np.zeros(n_gN)
     R_lambda_N = np.zeros(n_gN)
@@ -597,12 +622,6 @@ def get_R(x, prev_x, prev_AV, prev_gamma_F, prev_gdot_N, prev_q, prev_u, t,
     R_lambda_F = np.zeros(n_gammaF) # (142)
 
     gammaF_lim = np.array([[0,1],[2,3],[4,5]])
-
-    A = [1,1,1]
-    B = [1,1,1]
-    C = [1,1,1]
-    D_st = [1,1,0]
-    E_st = [1,1,0]
 
     for k in range(n_gN):
         if A[k]:
@@ -640,16 +659,13 @@ def get_R(x, prev_x, prev_AV, prev_gamma_F, prev_gdot_N, prev_q, prev_u, t,
         norm_R = np.linalg.norm(Res,np.inf)
         print(f'norm_R = {norm_R}')
 
-    return Res, AV, gdot_N, gamma_F, q, u, A, B, C, D_st, E_st
+    return Res, AV, gdot_N, gamma_F, q, u
 
-# W = np.concatenate((W_F,W_N,W_g,W_gamma))
-# np.linalg.matrix_rank(W)
-
-def get_R_J(x,prev_x,prev_AV,prev_gamma_F,prev_gdot_N,prev_q,prev_u,t,regions_are_fixed,A,B,C,D_st,E_st):
+def get_R_J(x,prev_x,prev_AV,prev_gamma_F,prev_gdot_N,prev_q,prev_u,t):
     
     epsilon = 1e-6
-    R_x, AV, gdot_N, gamma_F, q, u, A, B, C,D_st,E_st = get_R(x,prev_x,prev_AV,prev_gamma_F,
-                                           prev_gdot_N,prev_q,prev_u,t,False,regions_are_fixed,A,B,C,D_st,E_st)
+    R_x, AV, gdot_N, gamma_F, q, u = get_R(x,prev_x,prev_AV,prev_gamma_F,
+                                           prev_gdot_N,prev_q,prev_u,t,False)
     n = np.size(R_x) # Jacobian dimension
     # Initializing the Jacobian
     J = np.zeros((n,n))
@@ -657,8 +673,8 @@ def get_R_J(x,prev_x,prev_AV,prev_gamma_F,prev_gdot_N,prev_q,prev_u,t,regions_ar
     # Constructing the Jacobian column by column
     for i in range(n):
         # print(i)
-        R_x_plus_epsilon,_,_,_,_,_,_,_,_,_,_ = get_R(x+epsilon*I[:,i],prev_x,prev_AV,
-                                           prev_gamma_F,prev_gdot_N,prev_q,prev_u,t,True,regions_are_fixed,A,B,C,D_st,E_st)
+        R_x_plus_epsilon,_,_,_,_,_ = get_R(x+epsilon*I[:,i],prev_x,prev_AV,
+                                           prev_gamma_F,prev_gdot_N,prev_q,prev_u,t,True)
         J[:,i] = (R_x_plus_epsilon-R_x)/epsilon
 
     return R_x,AV,gdot_N,gamma_F,q,u,J
@@ -679,8 +695,6 @@ n = np.size(x_temp)
 y_indices = range(n_Rs)
 z_indices = range(n_Rs,n)
 
-regions_are_fixed = True
-
 A=[1, 1, 1]
 B=[1, 1, 1]
 C=[1, 1, 1]
@@ -696,83 +710,26 @@ for i in range(1,ntime):
 
     Res,AV_temp,gdot_N_temp,gamma_F_temp,q_temp,u_temp,J\
          = get_R_J(x_temp,prev_x,prev_AV,gamma_F[i-1,:],gdot_N[i-1,:],
-                   q[i-1,:],u[i-1,:],t,regions_are_fixed,A,B,C,D_st,E_st)
+                   q[i-1,:],u[i-1,:],t)
     
     norm_R = np.linalg.norm(Res,np.inf)
     print(f'lambda_N = {x_temp[36+3*n_g+2*n_gamma+2*n_gN:36+3*n_g+2*n_gamma+3*n_gN]}')
+    print(f'lambda_g = {x_temp[36+2*n_g:36+3*n_g]}')
 
-    if np.linalg.matrix_rank(J) == np.shape(J)[0]: # np.linalg.det(J) != 0
-
-        print('Semismooth Newton iterations')
-
-        # Semismooth Newton iterations
-        while norm_R>tol_n and nu<maxiter_n:
-            # Newton update
-            x_temp = x_temp-np.linalg.solve(J,Res)
-            # Calculate new EOM and residual
-            nu = nu+1
-            print(f'nu = {nu}')
-            Res,AV_temp,gdot_N_temp,gamma_F_temp,q_temp,u_temp,J = \
-                get_R_J(x_temp,prev_x,prev_AV,gamma_F[i-1,:],gdot_N[i-1,:],\
-                        q[i-1,:],u[i-1,:],t,regions_are_fixed,A,B,C,D_st,E_st)
-            norm_R = np.linalg.norm(Res,np.inf)
-            # print(f'norm_R = {norm_R}')
-            print(f'lambda_N = {x_temp[36+3*n_g+2*n_gamma+2*n_gN:36+3*n_g+2*n_gamma+3*n_gN]}')
-            
-    else:
-
-        print('Fixed point iterations')
-
-        y_temp = x_temp[y_indices]
-        z_temp = x_temp[z_indices]
-        mu = 0
-        while norm_R>tol_fp and mu<maxiter_fp:
-            Rs = Res[y_indices]
-            norm_Rs = np.linalg.norm(Rs)
-            nu = 0
-            while norm_Rs>tol_n and nu<maxiter_n:
-                dRs_dy = J[:n_Rs,:n_Rs]
-                y_temp = y_temp - np.linalg.solve(dRs_dy,Rs)
-                x_temp[y_indices] = y_temp
-                Res,_,_,_,_,_,J = get_R_J(x_temp,prev_x,prev_AV,gamma_F[i-1,:],gdot_N[i-1,:],
-                                          q[i-1,:],u[i-1,:],t,regions_are_fixed,A,B,C,D_st,E_st)
-                Rs = Res[y_indices]
-                norm_Rs = np.linalg.norm(Rs)
-                y_temp = x_temp[y_indices]
-                nu = nu+1
-            Rc = Res[z_indices]
-            z_temp = z_temp+Rc
-            x_temp[z_indices] = z_temp
-            Res,AV_temp,gdot_N_temp,gamma_F_temp,q_temp,u_temp,J = \
-                get_R_J(x_temp,prev_x,prev_AV,gamma_F[i-1,:],gdot_N[i-1,:],\
-                        q[i-1,:],u[i-1,:],t,regions_are_fixed,A,B,C,D_st,E_st)
-            norm_R = np.linalg.norm(Res)
-            mu = mu+1
-                
-
-    if nu == maxiter_n:
-        print('Max iterations exceeded')
-        # If I have a boucning between contact regions
-        regions_are_fixed = True
-        frequency = 1000  # Set Frequency To 2500 Hertz
-        duration = 5000  # Set Duration To 1000 ms == 1 second
-        winsound.Beep(frequency, duration)
-        nu = 0
-        while norm_R>tol_n and nu<maxiter_n:
-            # Newton update
-            x_temp = x_temp-np.linalg.solve(J,Res)
-            # Calculate new EOM and residual
-            nu = nu+1
-            print(f'nu = {nu}')
-            Res,AV_temp,gdot_N_temp,gamma_F_temp,q_temp,u_temp,J = \
-                get_R_J(x_temp,prev_x,prev_AV,gamma_F[i-1,:],gdot_N[i-1,:],\
-                        q[i-1,:],u[i-1,:],t,regions_are_fixed,A,B,C,D_st,E_st)
-            norm_R = np.linalg.norm(Res,np.inf)
-            # print(f'norm_R = {norm_R}')
-            print(f'lambda_N = {x_temp[36+3*n_g+2*n_gamma+2*n_gN:36+3*n_g+2*n_gamma+3*n_gN]}')
-            # print(f'max(x) = {np.max(x_temp)}')
-        print('end test')
-
+    # Semismooth Newton iterations
+    while norm_R>tol_n and nu<maxiter_n:
+        # Newton update
+        x_temp = x_temp-np.linalg.solve(J,Res)
+        # Calculate new EOM and residual
+        nu = nu+1
+        print(f'nu = {nu}')
+        Res,AV_temp,gdot_N_temp,gamma_F_temp,q_temp,u_temp,J = \
+            get_R_J(x_temp,prev_x,prev_AV,gamma_F[i-1,:],gdot_N[i-1,:],\
+                    q[i-1,:],u[i-1,:],t)
+        norm_R = np.linalg.norm(Res,np.inf)
+        # print(f'norm_R = {norm_R}')
+        print(f'lambda_N = {x_temp[36+3*n_g+2*n_gamma+2*n_gN:36+3*n_g+2*n_gamma+3*n_gN]}')
+        print(f'lambda_g = {x_temp[36+2*n_g:36+3*n_g]}')
     
     R_array[i] = norm_R
 
@@ -792,10 +749,13 @@ for i in range(1,ntime):
 
 
 import scipy.io
-scipy.io.savemat('q_01_01112024.mat',dict(q=q))
-scipy.io.savemat('lambda_N_01_01112024.mat',dict(lambda_N=lambda_N))
-scipy.io.savemat('a_01_01112024.mat',dict(a=a))
-scipy.io.savemat('lambda_g_01_05062024.mat',dict(lambda_N=lambda_N))
+scipy.io.savemat('q.mat',dict(q=q))
+scipy.io.savemat('lambda_N.mat',dict(lambda_N=lambda_N))
+scipy.io.savemat('a.mat',dict(a=a))
+scipy.io.savemat('lambda_g.mat',dict(lambda_g=lambda_g))
 
 
 print('done')
+
+# W = np.concatenate((W_F,W_N,W_g,W_gamma))
+# np.linalg.matrix_rank(W)
