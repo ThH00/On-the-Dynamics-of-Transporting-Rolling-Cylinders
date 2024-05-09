@@ -1,39 +1,42 @@
 ## Importing packages
 import numpy as np
 import winsound
-# import argparse
+import os
+import argparse
 
-# # optaining certain parametric arguments from an input file
-# def parse_args():
-#     parser = argparse.ArgumentParser(description='Process some integers and floats.')
-#     parser.add_argument('weight', type=float, help='cylinder weight in lb (float)')
-#     parser.add_argument('radius', type=float, help='cylinder radius in ft (float)')
-#     parser.add_argument('height', type=float, help='cylinder height in ft (float)')
-#     parser.add_argument('theta', type=float, help='angle that cylinders make with vertical in rad (float)')
-#     parser.add_argument('I_xbar0_1', type=float, help='x-coordinate of initial location of CG of cylinder I (float)')
-#     parser.add_argument('I_xbar0_2', type=float, help='y-coordinate of initial location of CG of cylinder I (float)')
-#     parser.add_argument('I_xbar0_3', type=float, help='z-coordinate of initial location of CG of cylinder I (float)')
-#     parser.add_argument('II_xbar0_1', type=float, help='x-coordinate of initial location of CG of cylinder II (float)')
-#     parser.add_argument('II_xbar0_2', type=float, help='y-coordinate of initial location of CG of cylinder II (float)')
-#     parser.add_argument('II_xbar0_3', type=float, help='z-coordinate of initial location of CG of cylinder II (float)')
-#     parser.add_argument('--output_path', '-o', type=str, help='Output path (optional)')
+# optaining certain parametric arguments from an input file
+def parse_args():
+    parser = argparse.ArgumentParser(description='Process some integers and floats.')
+    parser.add_argument('weight', type=float, help='cylinder weight in lb (float)')
+    parser.add_argument('radius', type=float, help='cylinder radius in ft (float)')
+    parser.add_argument('height', type=float, help='cylinder height in ft (float)')
+    parser.add_argument('theta', type=float, help='angle that cylinders make with vertical in rad (float)')
+    parser.add_argument('I_xbar0_1', type=float, help='x-coordinate of initial location of CG of cylinder I (float)')
+    parser.add_argument('I_xbar0_2', type=float, help='y-coordinate of initial location of CG of cylinder I (float)')
+    parser.add_argument('I_xbar0_3', type=float, help='z-coordinate of initial location of CG of cylinder I (float)')
+    parser.add_argument('II_xbar0_1', type=float, help='x-coordinate of initial location of CG of cylinder II (float)')
+    parser.add_argument('II_xbar0_2', type=float, help='y-coordinate of initial location of CG of cylinder II (float)')
+    parser.add_argument('II_xbar0_3', type=float, help='z-coordinate of initial location of CG of cylinder II (float)')
+    parser.add_argument('--output_path', '-o', type=str, help='Output path (optional)')
     
-#     args = parser.parse_args()
+    args = parser.parse_args()
     
-#     return args.weight, args.radius, args.height, args.theta, args.I_xbar0_1, args.I_xbar0_2, args.I_xbar0_3, args.II_xbar0_1, args.II_xbar0_2, args.II_xbar0_3, args.output_path
+    return args.weight, args.radius, args.height, args.theta, args.I_xbar0_1, args.I_xbar0_2, args.I_xbar0_3, args.II_xbar0_1, args.II_xbar0_2, args.II_xbar0_3, args.output_path
 
-# weight, radius,height, theta, I_xbar0_1, I_xbar0_2, I_xbar0_3, II_xbar0_1, II_xbar0_2, II_xbar0_3, output_path = parse_args()
+weight, radius,height, theta, I_xbar0_1, I_xbar0_2, I_xbar0_3, II_xbar0_1, II_xbar0_2, II_xbar0_3, output_path = parse_args()
 
-weight = 113
-radius = 0.375
-height = 4.25
-theta = 0.3142
-I_xbar0_1 = 0
-I_xbar0_2 = -0.3
-I_xbar0_3 = 2.1369
-II_xbar0_1 = 0.75
-II_xbar0_2 = 0.1125
-II_xbar0_3 = 2.1369
+directory_containing_output = os.path.dirname(output_path)
+
+# weight = 113
+# radius = 0.375
+# height = 4.25
+# theta = 0.3142
+# I_xbar0_1 = 0
+# I_xbar0_2 = -0.3
+# I_xbar0_3 = 2.1369
+# II_xbar0_1 = 0.75
+# II_xbar0_2 = 0.1125
+# II_xbar0_3 = 2.1369
 
 ## Problem Constants
 # number of degrees of freedom
@@ -82,7 +85,7 @@ I = np.array([[lambdat,0,0],[0,lambdat,0],[0,0,lambdaa]])   # moment of intertia
 
 ## Simulation Parameters
 ti = 0                      # [time], initial time
-ntime = 50                 # number of iterations
+ntime = 5                   # number of iterations
 dtime = 2e-3/time_nd_param  # [time], time step duration
 
 ## Parameters of generalized alpha scheme
@@ -769,13 +772,20 @@ for iter in range(1,ntime):
 
 
 import scipy.io
-scipy.io.savemat('q.mat',dict(q=q))
-scipy.io.savemat('u.mat',dict(u=u))
-scipy.io.savemat('a.mat',dict(a=a))
-scipy.io.savemat('lambda_g.mat',dict(lambda_g=lambda_g))
-scipy.io.savemat('lambda_gamma.mat',dict(lambda_gamma=lambda_gamma))
-scipy.io.savemat('lambda_N.mat',dict(lambda_N=lambda_N))
-scipy.io.savemat('lambda_F.mat',dict(lambda_F=lambda_F))
+file_name_q = str(f'{output_path}/q.mat')
+file_name_u = str(f'{output_path}/u.mat')
+file_name_a = str(f'{output_path}/a.mat')
+file_name_g = str(f'{output_path}/g.mat')
+file_name_gamma = str(f'{output_path}/gamma.mat')
+file_name_F = str(f'{output_path}/F.mat')
+file_name_N = str(f'{output_path}/N.mat')
+scipy.io.savemat('file_name_q',dict(q=q))
+scipy.io.savemat('file_name_u',dict(u=u))
+scipy.io.savemat('file_name_a',dict(a=a))
+scipy.io.savemat('file_name_g',dict(lambda_g=lambda_g))
+scipy.io.savemat('file_name_gamma',dict(lambda_gamma=lambda_gamma))
+scipy.io.savemat('file_name_F',dict(lambda_N=lambda_N))
+scipy.io.savemat('file_name_N',dict(lambda_F=lambda_F))
 
 
 print('done')
