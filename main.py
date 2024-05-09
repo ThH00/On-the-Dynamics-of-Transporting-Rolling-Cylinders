@@ -770,15 +770,12 @@ for iter in range(1,ntime):
 
 import scipy.io
 scipy.io.savemat('q.mat',dict(q=q))
-scipy.io.savemat('lambda_N.mat',dict(lambda_N=lambda_N))
-scipy.io.savemat('a.mat',dict(a=a))
 scipy.io.savemat('u.mat',dict(u=u))
+scipy.io.savemat('a.mat',dict(a=a))
 scipy.io.savemat('lambda_g.mat',dict(lambda_g=lambda_g))
 scipy.io.savemat('lambda_gamma.mat',dict(lambda_gamma=lambda_gamma))
+scipy.io.savemat('lambda_N.mat',dict(lambda_N=lambda_N))
 scipy.io.savemat('lambda_F.mat',dict(lambda_F=lambda_F))
 
 
 print('done')
-
-# W = np.concatenate((W_F,W_N,W_g,W_gamma))
-# np.linalg.matrix_rank(W)
