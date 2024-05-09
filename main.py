@@ -54,6 +54,14 @@ mu_k = 0.4              # kinetic friction coefficient
 
 ## Nondimensionalization
 # Nondimensionalization Parameters
+
+# mass_nd_param = 1
+# length_nd_param = 1 # radius
+# time_nd_param = 1
+# velocity_nd_param = 1
+# acceleration_nd_param = 1
+# force_nd_param = mass_nd_param*acceleration_nd_param
+
 mass_nd_param = mass
 length_nd_param = 1 # radius
 time_nd_param = np.sqrt(length_nd_param/gravity)
@@ -74,8 +82,8 @@ I = np.array([[lambdat,0,0],[0,lambdat,0],[0,0,lambdaa]])   # moment of intertia
 
 ## Simulation Parameters
 ti = 0                      # [time], initial time
-ntime = 10                  # number of iterations
-dtime = 1e-3/time_nd_param  # [time], time step duration
+ntime = 50                 # number of iterations
+dtime = 2e-3/time_nd_param  # [time], time step duration
 
 ## Parameters of generalized alpha scheme
 # Differentiation parameters
@@ -90,7 +98,7 @@ r = 0.3
 
 # Loop parameters
 maxiter_n = 100
-tol_n = 1.0e-5
+tol_n = 1.0e-8
 
 ## Kinetic Quantities
 n_g = 4         # num position level constraints, constant
@@ -99,19 +107,19 @@ n_gamma = 1     # num velocity level constraints, contant
 n_gammaF = 6    # no slip constraints/friction force, constant
 
 ## Initialize arrays to save results
-a = np.zeros((ndof,ntime))
-U = np.zeros((ndof,ntime))
-Q = np.zeros((ndof,ntime))
-Kappa_g = np.zeros((n_g,ntime))
-Lambda_g = np.zeros((n_g,ntime))
-lambda_g = np.zeros((n_g,ntime))
-Lambda_gamma = np.zeros((n_gamma,ntime))
-lambda_gamma = np.zeros((n_gamma,ntime))
-Kappa_N = np.zeros((n_gN,ntime))
-Lambda_N = np.zeros((n_gN,ntime))
-lambda_N = np.zeros((n_gN,ntime))
-Lambda_F = np.zeros((n_gammaF,ntime))
-lambda_F = np.zeros((n_gammaF,ntime))
+a = np.zeros((ntime,ndof))
+U = np.zeros((ntime,ndof))
+Q = np.zeros((ntime,ndof))
+Kappa_g = np.zeros((ntime,n_g))
+Lambda_g = np.zeros((ntime,n_g))
+lambda_g = np.zeros((ntime,n_g))
+Lambda_gamma = np.zeros((ntime,n_gamma))
+lambda_gamma = np.zeros((ntime,n_gamma))
+Kappa_N = np.zeros((ntime,n_gN))
+Lambda_N = np.zeros((ntime,n_gN))
+lambda_N = np.zeros((ntime,n_gN))
+Lambda_F = np.zeros((ntime,n_gammaF))
+lambda_F = np.zeros((ntime,n_gammaF))
 
 R_array = np.zeros(ntime)
 
@@ -131,10 +139,17 @@ phiII0 = 0
 
 psiIdot0 = 0
 thetaIdot0 = 0
-phiIdot0 = -6*np.pi*time_nd_param
 psiIIdot0 = 0
 thetaIIdot0 = 0
 phiIIdot0 = 0 #-phidot0*time_nd_param
+
+
+phiIdot = -6*np.pi*time_nd_param*np.ones(ntime) #-1*time_nd_param*np.ones(ntime)
+phiIddot = np.zeros(ntime)
+
+# make an arrays
+# phiIdot = np.concatenate((np.linspace(0,6*np.pi,1000)*time_nd_param, 6*np.pi*time_nd_param*np.ones(ntime-20)),axis=None)
+# phiIddot = np.concatenate((6*np.pi*time_nd_param/(1000*dtime)*np.ones(1000),np.zeros(ntime-20)),axis=None)
 
 I_xbar0 = np.array([I_xbar0_1, I_xbar0_2, I_xbar0_3])/length_nd_param
 II_xbar0 = np.array([II_xbar0_1, II_xbar0_2, II_xbar0_3])/length_nd_param
@@ -146,19 +161,19 @@ q0 = np.concatenate((I_xbar0,psiI0,thetaI0,phiI0,
                      II_xbar0,psiII0,thetaII0,phiII0),axis=None)
 u0 = np.concatenate((I_vbar0,0,0,0,II_vbar0,0,0,0),axis=None)
 
-lambda_N[:,0] = [0.7*m*gr, 0.7*m*gr, 0*m*gr]
-lambda_F[:,0] = [0,0,0,0.16,0,0]
-lambda_g[:,0] = [0, 0.3*m*gr,0.3*m*gr,0]
+lambda_N[0,:] = [0.6863*m*gr, 0.6863*m*gr, 0*m*gr]
+# lambda_F[0,:] = [0,0,0,0.16,0,0]
+lambda_g[0,:] = [0, 0.3137*m*gr,0.3137*m*gr,0]
 
-x0 = np.concatenate((a[:,0],U[:,0],Q[:,0],
-                     Kappa_g[:,0],Lambda_g[:,0],lambda_g[:,0],
-                     Lambda_gamma[:,0],lambda_gamma[:,0],
-                     Kappa_N[:,0],Lambda_N[:,0],lambda_N[:,0],
-                     Lambda_F[:,0],lambda_F[:,0]),axis=None)
+x0 = np.concatenate((a[0,:],U[0,:],Q[0,:],
+                     Kappa_g[0,:],Lambda_g[0,:],lambda_g[0,:],
+                     Lambda_gamma[0,:],lambda_gamma[0,:],
+                     Kappa_N[0,:],Lambda_N[0,:],lambda_N[0,:],
+                     Lambda_F[0,:],lambda_F[0,:]),axis=None)
 
 # initial auxiliary variables
 a_bar0 = np.zeros(ndof)
-lambda_N_bar0 = lambda_N[:,0]
+lambda_N_bar0 = lambda_N[0,:]
 lambda_F_bar0 = np.zeros(n_gammaF)
 
 prev_AV = np.concatenate((a_bar0,lambda_N_bar0,lambda_F_bar0),axis=None)
@@ -229,13 +244,6 @@ def get_cylinder_ground_contact(q,u,a):
     pidot = np.cross(omega,pi) #-h/2*e3dot-R*e2ppdot
     piddot = np.cross(alpha,pi)+np.cross(omega,pidot) #-h/2*e3ddot+R*e2ppddot
 
-    g_N = q[2]+pi[2]
-    gdot_N = u[2]+pidot[2]
-    gddot_N = a[2]+piddot[2]
-    W_N = np.zeros(6) # check this
-    W_N[2] = 1
-    W_N[4] = h/2*(np.sin(q[4]))-R*(np.cos(q[4]))
-
     vC = np.array([-(u[3] + u[5]*np.cos(q[4]))*(2*R*np.cos(q[4]) - h*np.sin(q[4]))*np.cos(q[3])/2 + (2*R*np.sin(q[4]) + h*np.cos(q[4]))*(u[4]*np.sin(q[3]) - u[5]*np.sin(q[4])*np.cos(q[3]))/2,
                    -(u[3] + u[5]*np.cos(q[4]))*(2*R*np.cos(q[4]) - h*np.sin(q[4]))*np.sin(q[3])/2 - (2*R*np.sin(q[4]) + h*np.cos(q[4]))*(u[4]*np.cos(q[3]) + u[5]*np.sin(q[3])*np.sin(q[4]))/2,
                    u[4]*(R*np.cos(q[4]) - h*np.sin(q[4])/2)])
@@ -244,6 +252,13 @@ def get_cylinder_ground_contact(q,u,a):
                    -R*a[3]*np.sin(q[3])*np.cos(q[4]) - R*a[4]*np.sin(q[4])*np.cos(q[3]) - R*a[5]*np.sin(q[3]) - R*u[3]**2*np.cos(q[3])*np.cos(q[4]) + 2*R*u[3]*u[4]*np.sin(q[3])*np.sin(q[4]) - R*u[3]*u[5]*np.cos(q[3]) - R*u[4]**2*np.cos(q[3])*np.cos(q[4]) + a[3]*h*np.sin(q[3])*np.sin(q[4])/2 - a[4]*h*np.cos(q[3])*np.cos(q[4])/2 + h*u[3]**2*np.sin(q[4])*np.cos(q[3])/2 + h*u[3]*u[4]*np.sin(q[3])*np.cos(q[4]) + h*u[4]**2*np.sin(q[4])*np.cos(q[3])/2,
                    a[4]*(2*R*np.cos(q[4]) - h*np.sin(q[4]))/2 - u[4]**2*(2*R*np.sin(q[4]) + h*np.cos(q[4]))/2])
 
+
+    g_N = q[2]+pi[2]
+    gdot_N = u[2]+pidot[2]
+    gddot_N = a[2]-aC[2] #a[2]+piddot[2]
+    W_N = np.zeros(6) # check this
+    W_N[2] = 1
+    W_N[4] = h/2*(np.sin(q[4]))-R*(np.cos(q[4]))
 
     gamma_F1 = u[0]-vC[0]
     gamma_F2 = u[1]-vC[1]
@@ -483,10 +498,11 @@ def get_cylinder_cylinder_contact(q,u,a):
     return g_N,gdot_N,gddot_N,W_N,gamma_F1,gammadot_F1,W_F1,\
         gamma_F2,gammadot_F2,W_F2,params
 
-def get_R(x, prev_x, prev_AV, prev_gamma_F, prev_gdot_N, prev_q, prev_u, t,
+def get_R(x, prev_x, prev_AV, prev_gamma_F, prev_gdot_N, prev_q, prev_u,
            J_calc_bool):
-
+    global iter
     global A, B, C, D_st, E_st
+    global phiIdot
 
     # Data extraction
     prev_a, _, _, _, _, _, _, _, _, _, prev_lambda_N, _, prev_lambda_F = \
@@ -592,12 +608,16 @@ def get_R(x, prev_x, prev_AV, prev_gamma_F, prev_gdot_N, prev_q, prev_u, t,
 
     # The driving motion
     # angle I_phi
-    if t<2*dtime:
-        gamma[0] = u[5]
-    else:
-        gamma[0] = u[5]-phiIdot0 #time_nd_param
-    gammadot[0] = a[5]
+    gamma[0] = u[5]-phiIdot[iter]
+    gammadot[0] = a[5]-phiIddot[iter]
     W_gamma[0,5] = 1
+
+    # if t<2*dtime:
+    #     gamma[0] = u[5]
+    # elif:
+    #     gamma[0] = u[5]-phiIdot0 #time_nd_param
+    # gammadot[0] = a[5]
+    # W_gamma[0,5] = 1
 
     # Kinetic quantities
     # normal
@@ -661,11 +681,11 @@ def get_R(x, prev_x, prev_AV, prev_gamma_F, prev_gdot_N, prev_q, prev_u, t,
 
     return Res, AV, gdot_N, gamma_F, q, u
 
-def get_R_J(x,prev_x,prev_AV,prev_gamma_F,prev_gdot_N,prev_q,prev_u,t):
+def get_R_J(x,prev_x,prev_AV,prev_gamma_F,prev_gdot_N,prev_q,prev_u):
     
     epsilon = 1e-6
     R_x, AV, gdot_N, gamma_F, q, u = get_R(x,prev_x,prev_AV,prev_gamma_F,
-                                           prev_gdot_N,prev_q,prev_u,t,False)
+                                           prev_gdot_N,prev_q,prev_u,False)
     n = np.size(R_x) # Jacobian dimension
     # Initializing the Jacobian
     J = np.zeros((n,n))
@@ -674,7 +694,7 @@ def get_R_J(x,prev_x,prev_AV,prev_gamma_F,prev_gdot_N,prev_q,prev_u,t):
     for i in range(n):
         # print(i)
         R_x_plus_epsilon,_,_,_,_,_ = get_R(x+epsilon*I[:,i],prev_x,prev_AV,
-                                           prev_gamma_F,prev_gdot_N,prev_q,prev_u,t,True)
+                                           prev_gamma_F,prev_gdot_N,prev_q,prev_u,True)
         J[:,i] = (R_x_plus_epsilon-R_x)/epsilon
 
     return R_x,AV,gdot_N,gamma_F,q,u,J
@@ -701,16 +721,16 @@ C=[1, 1, 1]
 D_st = [1,1,0]
 E_st = [1,1,0]
 
-for i in range(1,ntime):
-    print(f'i={i}')
+for iter in range(1,ntime):
+    print(f'i={iter}')
 
     # First semismooth Newton calculation
-    t = dtime*i
+    t = dtime*iter
     nu = 0
 
     Res,AV_temp,gdot_N_temp,gamma_F_temp,q_temp,u_temp,J\
-         = get_R_J(x_temp,prev_x,prev_AV,gamma_F[i-1,:],gdot_N[i-1,:],
-                   q[i-1,:],u[i-1,:],t)
+         = get_R_J(x_temp,prev_x,prev_AV,gamma_F[iter-1,:],gdot_N[iter-1,:],
+                   q[iter-1,:],u[iter-1,:])
     
     norm_R = np.linalg.norm(Res,np.inf)
     print(f'lambda_N = {x_temp[36+3*n_g+2*n_gamma+2*n_gN:36+3*n_g+2*n_gamma+3*n_gN]}')
@@ -724,26 +744,26 @@ for i in range(1,ntime):
         nu = nu+1
         print(f'nu = {nu}')
         Res,AV_temp,gdot_N_temp,gamma_F_temp,q_temp,u_temp,J = \
-            get_R_J(x_temp,prev_x,prev_AV,gamma_F[i-1,:],gdot_N[i-1,:],\
-                    q[i-1,:],u[i-1,:],t)
+            get_R_J(x_temp,prev_x,prev_AV,gamma_F[iter-1,:],gdot_N[iter-1,:],\
+                    q[iter-1,:],u[iter-1,:])
         norm_R = np.linalg.norm(Res,np.inf)
         # print(f'norm_R = {norm_R}')
         print(f'lambda_N = {x_temp[36+3*n_g+2*n_gamma+2*n_gN:36+3*n_g+2*n_gamma+3*n_gN]}')
         print(f'lambda_g = {x_temp[36+2*n_g:36+3*n_g]}')
     
-    R_array[i] = norm_R
+    R_array[iter] = norm_R
 
     ## Saving output results
-    a[:,i],U[:,i],Q[:,i],Kappa_g[:,i],Lambda_g[:,i],lambda_g[:,i],\
-        Lambda_gamma[:,i],lambda_gamma[:,i],Kappa_N[:,i],\
-            Lambda_N[:,i],lambda_N[:,i],Lambda_F[:,i],lambda_F[:,i]\
+    a[iter,:],U[iter,:],Q[iter,:],Kappa_g[iter,:],Lambda_g[iter,:],lambda_g[iter,:],\
+        Lambda_gamma[iter,:],lambda_gamma[iter,:],Kappa_N[iter,:],\
+            Lambda_N[iter,:],lambda_N[iter,:],Lambda_F[iter,:],lambda_F[iter,:]\
                   = get_x_components(x_temp)
         
     # Updating reusable results
-    gamma_F[i,:] = gamma_F_temp
-    gdot_N[i,:] = gdot_N_temp
-    q[i,:] = q_temp
-    u[i,:] = u_temp
+    gamma_F[iter,:] = gamma_F_temp
+    gdot_N[iter,:] = gdot_N_temp
+    q[iter,:] = q_temp
+    u[iter,:] = u_temp
     prev_x = x_temp
     prev_AV = AV_temp 
 
@@ -752,7 +772,10 @@ import scipy.io
 scipy.io.savemat('q.mat',dict(q=q))
 scipy.io.savemat('lambda_N.mat',dict(lambda_N=lambda_N))
 scipy.io.savemat('a.mat',dict(a=a))
+scipy.io.savemat('u.mat',dict(u=u))
 scipy.io.savemat('lambda_g.mat',dict(lambda_g=lambda_g))
+scipy.io.savemat('lambda_gamma.mat',dict(lambda_gamma=lambda_gamma))
+scipy.io.savemat('lambda_F.mat',dict(lambda_F=lambda_F))
 
 
 print('done')
