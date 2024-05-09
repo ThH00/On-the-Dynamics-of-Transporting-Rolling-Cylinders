@@ -7,9 +7,9 @@ ARGS_NAMES = ['m', 'r', 'h', 'theta', 'I_xbar0_1', 'I_xbar0_2', 'I_xbar0_3', 'II
 
 # Generate timestamp
 timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-outputs_dir = f"outputs/{timestamp}"
+outputs_dir = f"outputs/varying_angle_{timestamp}"
 source_file = "main.py"
-input_file = "inputs.txt"
+input_file = "inputs-angles.txt"
 
 # Check if the input file exists
 if not os.path.isfile(input_file):
