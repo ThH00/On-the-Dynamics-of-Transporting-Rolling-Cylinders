@@ -1,6 +1,5 @@
 ## Importing packages
 import numpy as np
-import winsound
 import os
 import argparse
 
@@ -23,20 +22,13 @@ def parse_args():
     
     return args.weight, args.radius, args.height, args.theta, args.I_xbar0_1, args.I_xbar0_2, args.I_xbar0_3, args.II_xbar0_1, args.II_xbar0_2, args.II_xbar0_3, args.output_path
 
-weight, radius,height, theta, I_xbar0_1, I_xbar0_2, I_xbar0_3, II_xbar0_1, II_xbar0_2, II_xbar0_3, output_path = parse_args()
+weight, radius, height, theta, I_xbar0_1, I_xbar0_2, I_xbar0_3, II_xbar0_1, II_xbar0_2, II_xbar0_3, output_path = parse_args()
 
 directory_containing_output = os.path.dirname(output_path)
 
-# weight = 113
-# radius = 0.375
-# height = 4.25
-# theta = 0.3142
-# I_xbar0_1 = 0
-# I_xbar0_2 = -0.3
-# I_xbar0_3 = 2.1369
-# II_xbar0_1 = 0.75
-# II_xbar0_2 = 0.1125
-# II_xbar0_3 = 2.1369
+directory_containing_output = os.path.dirname(output_path)
+f = open(f"{directory_containing_output}/saved_values_all.txt",'a')
+g = open(f"{directory_containing_output}/saved_values_plots.txt",'a')
 
 ## Problem Constants
 # number of degrees of freedom
@@ -57,16 +49,8 @@ mu_k = 0.4              # kinetic friction coefficient
 
 ## Nondimensionalization
 # Nondimensionalization Parameters
-
-# mass_nd_param = 1
-# length_nd_param = 1 # radius
-# time_nd_param = 1
-# velocity_nd_param = 1
-# acceleration_nd_param = 1
-# force_nd_param = mass_nd_param*acceleration_nd_param
-
 mass_nd_param = mass
-length_nd_param = 1 # radius
+length_nd_param = 1
 time_nd_param = np.sqrt(length_nd_param/gravity)
 velocity_nd_param = np.sqrt(gravity*length_nd_param)
 acceleration_nd_param = gravity
@@ -85,7 +69,7 @@ I = np.array([[lambdat,0,0],[0,lambdat,0],[0,0,lambdaa]])   # moment of intertia
 
 ## Simulation Parameters
 ti = 0                      # [time], initial time
-ntime = 5                   # number of iterations
+ntime = 2000                # number of iterations
 dtime = 2e-3/time_nd_param  # [time], time step duration
 
 ## Parameters of generalized alpha scheme
@@ -131,8 +115,7 @@ gdot_N = np.zeros((ntime,n_gN))
 q = np.zeros((ntime,ndof))
 u = np.zeros((ntime,ndof))
 
-# obtained from frobenius_criteria_two_cylinders
-# > valid_touching_config
+# obtained from > valid_touching_config
 psiI0 = 0
 thetaI0 = theta
 phiI0 = 0
@@ -144,15 +127,10 @@ psiIdot0 = 0
 thetaIdot0 = 0
 psiIIdot0 = 0
 thetaIIdot0 = 0
-phiIIdot0 = 0 #-phidot0*time_nd_param
+phiIIdot0 = 0 
 
-
-phiIdot = -6*np.pi*time_nd_param*np.ones(ntime) #-1*time_nd_param*np.ones(ntime)
+phiIdot = -6*np.pi*time_nd_param*np.ones(ntime)
 phiIddot = np.zeros(ntime)
-
-# make an arrays
-# phiIdot = np.concatenate((np.linspace(0,6*np.pi,1000)*time_nd_param, 6*np.pi*time_nd_param*np.ones(ntime-20)),axis=None)
-# phiIddot = np.concatenate((6*np.pi*time_nd_param/(1000*dtime)*np.ones(1000),np.zeros(ntime-20)),axis=None)
 
 I_xbar0 = np.array([I_xbar0_1, I_xbar0_2, I_xbar0_3])/length_nd_param
 II_xbar0 = np.array([II_xbar0_1, II_xbar0_2, II_xbar0_3])/length_nd_param
@@ -164,9 +142,9 @@ q0 = np.concatenate((I_xbar0,psiI0,thetaI0,phiI0,
                      II_xbar0,psiII0,thetaII0,phiII0),axis=None)
 u0 = np.concatenate((I_vbar0,0,0,0,II_vbar0,0,0,0),axis=None)
 
-lambda_N[0,:] = [0.6863*m*gr, 0.6863*m*gr, 0*m*gr]
-# lambda_F[0,:] = [0,0,0,0.16,0,0]
-lambda_g[0,:] = [0, 0.3137*m*gr,0.3137*m*gr,0]
+# better obtain these values from static case
+lambda_N[0,:] = [m*gr, m*gr, 0]*(h/2*np.sin(theta))/(h*np.sin(theta)-r*np.cos(theta)) 
+lambda_g[0,:] = [0, m*gr, m*gr, 0]*(h/2*np.sin(theta)-r*np.cos(theta))/(h*np.sin(theta)-r*np.cos(theta))
 
 x0 = np.concatenate((a[0,:],U[0,:],Q[0,:],
                      Kappa_g[0,:],Lambda_g[0,:],lambda_g[0,:],
@@ -258,8 +236,8 @@ def get_cylinder_ground_contact(q,u,a):
 
     g_N = q[2]+pi[2]
     gdot_N = u[2]+pidot[2]
-    gddot_N = a[2]-aC[2] #a[2]+piddot[2]
-    W_N = np.zeros(6) # check this
+    gddot_N = a[2]-aC[2]
+    W_N = np.zeros(6)
     W_N[2] = 1
     W_N[4] = h/2*(np.sin(q[4]))-R*(np.cos(q[4]))
 
@@ -615,13 +593,6 @@ def get_R(x, prev_x, prev_AV, prev_gamma_F, prev_gdot_N, prev_q, prev_u,
     gammadot[0] = a[5]-phiIddot[iter]
     W_gamma[0,5] = 1
 
-    # if t<2*dtime:
-    #     gamma[0] = u[5]
-    # elif:
-    #     gamma[0] = u[5]-phiIdot0 #time_nd_param
-    # gammadot[0] = a[5]
-    # W_gamma[0,5] = 1
-
     # Kinetic quantities
     # normal
     ksi_N = gdot_N+e_N*prev_gdot_N # (86)
@@ -756,7 +727,7 @@ for iter in range(1,ntime):
     
     R_array[iter] = norm_R
 
-    ## Saving output results
+    # Saving output results
     a[iter,:],U[iter,:],Q[iter,:],Kappa_g[iter,:],Lambda_g[iter,:],lambda_g[iter,:],\
         Lambda_gamma[iter,:],lambda_gamma[iter,:],Kappa_N[iter,:],\
             Lambda_N[iter,:],lambda_N[iter,:],Lambda_F[iter,:],lambda_F[iter,:]\
@@ -771,6 +742,9 @@ for iter in range(1,ntime):
     prev_AV = AV_temp 
 
 
+f.write(f'{theta}\n {lambda_N}\n {lambda_g}\n')
+g.write(f'{theta} {lambda_N[iter,0]} {lambda_g[iter,1]}\n')
+
 import scipy.io
 file_name_q = str(f'{output_path}/q.mat')
 file_name_u = str(f'{output_path}/u.mat')
@@ -779,13 +753,13 @@ file_name_g = str(f'{output_path}/g.mat')
 file_name_gamma = str(f'{output_path}/gamma.mat')
 file_name_F = str(f'{output_path}/F.mat')
 file_name_N = str(f'{output_path}/N.mat')
-scipy.io.savemat('file_name_q',dict(q=q))
-scipy.io.savemat('file_name_u',dict(u=u))
-scipy.io.savemat('file_name_a',dict(a=a))
-scipy.io.savemat('file_name_g',dict(lambda_g=lambda_g))
-scipy.io.savemat('file_name_gamma',dict(lambda_gamma=lambda_gamma))
-scipy.io.savemat('file_name_F',dict(lambda_N=lambda_N))
-scipy.io.savemat('file_name_N',dict(lambda_F=lambda_F))
+scipy.io.savemat(file_name_q,dict(q=q))
+scipy.io.savemat(file_name_u,dict(u=u))
+scipy.io.savemat(file_name_a,dict(a=a))
+scipy.io.savemat(file_name_g,dict(lambda_g=lambda_g))
+scipy.io.savemat(file_name_gamma,dict(lambda_gamma=lambda_gamma))
+scipy.io.savemat(file_name_N,dict(lambda_N=lambda_N))
+scipy.io.savemat(file_name_F,dict(lambda_F=lambda_F))
 
 
 print('done')

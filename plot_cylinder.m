@@ -1,11 +1,10 @@
-function [diskt,diskb,cylinder_axis,sides,pointA,pointP,basis,xP] ...
-    = plot_cylinder(x1,x2,x3,psi,theta,phi,color)
+function [diskt,diskb,sides,pointA,pointP,helix,xP] ...
+    = plot_cylinder(x1,x2,x3,psi,theta,phi,cylinder_color,helix_color)
 %UNTITLED6 Summary of this function goes here
 %   Detailed explanation goes here
 
-% global R h
-R = 0.4;
-h = 5.08;
+R = 0.3750;
+h = 4.25;
 
 
 %% basis vectors
@@ -42,8 +41,21 @@ e1 = (R3*R2*R1)'*E1;
 e2 = (R3*R2*R1)'*E2;
 e3 = (R3*R2*R1)'*E3;
 
+%% plotting helix
+loops = 10*pi;
+t = linspace(0,loops,100);
+
+x_helix = R*cos(t);
+y_helix = R*sin(t);
+z_helix = t/(loops)*h;
+
+position_helix = zeros(length(t),3);
+for i = 1:length(t)
+    position_helix(i,:) = [x1;x2;x3]-h/2*e3+(R3*R2*R1)'*[x_helix(i);y_helix(i);z_helix(i)];
+end
+
 %% plotting a circle in the horizontal plane
-angle = linspace(0,2*pi,40);
+angle = linspace(0,2*pi,60);
 circ1 = R*cos(angle);
 circ2 = R*sin(angle);
 
@@ -62,30 +74,31 @@ zcirc = [zcirct' zcircb'];
 
 % top disk
 diskt = patch('xdata',xcirct,'ydata',ycirct,'zdata',zcirct,...
-    'facecolor',[0, 0, 1],'linewidth',2);
+    'facecolor',cylinder_color,'linewidth',2);
 % bottom disk
 diskb = patch('xdata',xcircb,'ydata',ycircb,'zdata',zcircb,...
-    'facecolor',[0, 0, 0],'linewidth',2);
-% cylinder axis
-cylinder_axis = line('xdata',[x1+h/2*e3(1),x1-h/2*e3(1)],...
-    'ydata',[x2+h/2*e3(2),x2-h/2*e3(2)],...
-    'zdata',[x3+h/2*e3(3),x3-h/2*e3(3)],...
-    'linewidth',2,'color','red');
+    'facecolor',cylinder_color,'linewidth',2);
+% % cylinder axis
+% cylinder_axis = line('xdata',[x1+h/2*e3(1),x1-h/2*e3(1)],...
+%     'ydata',[x2+h/2*e3(2),x2-h/2*e3(2)],...
+%     'zdata',[x3+h/2*e3(3),x3-h/2*e3(3)],...
+%     'linewidth',2,'color','red');
 % cylinder sides
 for i = 1:length(angle)
     sides(i) = line('xdata',xcirc(i,:),'ydata',ycirc(i,:),...
-        'zdata',zcirc(i,:),'linewidth',1,'color',color);
+        'zdata',zcirc(i,:),'linewidth',1,'color',cylinder_color);
 end
 % fixed point on top rim of cylinder (A)
 pointA = plot3(xcirct(1),ycirct(1),zcirct(1),'linewidth',2,'color','red','marker','*');
 % contact point path (P)
 xP = [x1;x2;x3]-h/2*e3+R*e2pp;
 pointP = plot3(xP(1),xP(2),xP(3),'linewidth',5,'color','black','marker','.');
-% {e1, e2, e3} basis vectors
-basis(1) = quiver3(x1+h/2*e3(1), x2+h/2*e3(2), x3+h/2*e3(3), e1(1), e1(2), e1(3),'r','linewidth',2);
-basis(2) = quiver3(x1+h/2*e3(1), x2+h/2*e3(2), x3+h/2*e3(3), e2(1), e2(2), e2(3),'g','linewidth',2);
-basis(3) = quiver3(x1+h/2*e3(1), x2+h/2*e3(2), x3+h/2*e3(3), e3(1), e3(2), e3(3),'k','linewidth',2);
-
+% % {e1, e2, e3} basis vectors
+% basis(1) = quiver3(x1+h/2*e3(1), x2+h/2*e3(2), x3+h/2*e3(3), e1(1), e1(2), e1(3),'r','linewidth',2);
+% basis(2) = quiver3(x1+h/2*e3(1), x2+h/2*e3(2), x3+h/2*e3(3), e2(1), e2(2), e2(3),'g','linewidth',2);
+% basis(3) = quiver3(x1+h/2*e3(1), x2+h/2*e3(2), x3+h/2*e3(3), e3(1), e3(2), e3(3),'k','linewidth',2);
+% plot helix
+helix = plot3(position_helix(:,1),position_helix(:,2),position_helix(:,3),'color',helix_color,'linewidth',4);
 
 end
 

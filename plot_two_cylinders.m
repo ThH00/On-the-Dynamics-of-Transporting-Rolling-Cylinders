@@ -4,6 +4,16 @@ function [] = plot_two_cylinders(q)
 
 ntime = size(q,1);
 
+R = 0.3750;
+h = 4.25;
+
+berkeley_blue = [0, 50, 98]/256;
+california_gold = [253, 181, 21]/256;
+soybean = [157, 173, 51]/256;
+lawrence = [0,176,218]/256;
+metallic_gold = [188,155,106]/256;
+bayfog = [194,185,167]/256;
+
 x1I = q(:,1);
 x2I = q(:,2);
 x3I = q(:,3);
@@ -21,40 +31,40 @@ phiII = q(:,12);
 figure()
 
 axis equal
-view(45,45)
-xlim([-5 5])
-ylim([-5 5])
-zlim([-1 6])
+view_angle = linspace(-75+180,180,ntime);
+% view(-45,45)
+xlim([-min(x1I)-2*R max(x1II)+2*R])
+ylim([-h h])
+zlim([-1 h+2*R])
 box on
 
 set(gca,'XTick',[], 'YTick', [], 'ZTick', [])
 
-animation = VideoWriter('rolling_two_cylinders.avi');
+animation = VideoWriter('rolling_two_cylinders5.avi');
 animation.FrameRate = 100;
 open(animation);
 
-for i = 1:ntime
+for i = 1:4:ntime
     hold on
+    view(view_angle(i),45)
     
-    [disktI,diskbI,cylinder_axisI,sidesI,pointAI,pointPI,basisI,~] = ...
-        plot_cylinder(x1I(i),x2I(i),x3I(i),psiI(i),thetaI(i),phiI(i),'green');
-    [disktII,diskbII,cylinder_axisII,sidesII,pointAII,pointPII,basisII,~] = ...
-        plot_cylinder(x1II(i),x2II(i),x3II(i),psiII(i),thetaII(i),phiII(i),'blue');
+    [disktI,diskbI,sidesI,pointAI,pointPI,helixI,~] = ...
+        plot_cylinder(x1I(i),x2I(i),x3I(i),psiI(i),thetaI(i),phiI(i),berkeley_blue,california_gold);
+    [disktII,diskbII,sidesII,pointAII,pointPII,helixII,~] = ...
+        plot_cylinder(x1II(i),x2II(i),x3II(i),psiII(i),thetaII(i),phiII(i),berkeley_blue,california_gold);
     drawnow
     writeVideo(animation, getframe(gcf));
-    pause(0.00001)
+%     pause(0.00001)
     delete(disktI)
     delete(diskbI)
-    delete(cylinder_axisI)
     delete(sidesI)
     delete(pointAI)
-    delete(basisI)
     delete(disktII)
     delete(diskbII)
-    delete(cylinder_axisII)
     delete(sidesII)
     delete(pointAII)
-    delete(basisII)
+    delete(helixI)
+    delete(helixII)
     
 end
 
